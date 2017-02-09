@@ -1,0 +1,24 @@
+#!/usr/bin/perl -w
+use strict;
+
+use YAML;
+use PDF::API2;
+use File::Spec::Function qw{catfile};
+
+my $FILE = shift or die "Usage: $0 {file}\n";
+my $data = YAML::LoadFile($FILE);
+
+my $new_pdf = PDF::API2->new;
+my $file_pattern = $data->{file_pattern} || '%s';
+
+for my $source (@{ $data->{page_map} }) {
+    my $source_pdf = PDF::API2->open(catfile($data->{base_dir}, sprintf($file_pattern, $source->[0])));
+    for my $page_number (@{ $source->[1] }) {
+        # add a page
+        my $new_page = $new_pdf->page;
+        # import the page from the source
+        my $page = $new_pdf->import_page($source_pdf, $page_number, $new_page);
+    }
+}
+
+print $new_pdf->stringify;

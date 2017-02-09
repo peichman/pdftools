@@ -1,0 +1,46 @@
+#!/usr/bin/perl -w
+use strict;
+
+use POSIX qw{ceil};
+use PDF::API2;
+
+my $FILE = shift or die "Usage: $0 {file} [booklet size]\n";
+my $BOOKLET_SIZE = shift || 8;
+
+my %config_for = (
+    4 => {
+        description => '4-page booklets for duplex 2-up printing',
+        order       => [2,3,4,1],
+        must_rotate => [0,0,0,0],
+    },
+    8 => {
+        description => '8-page booklets for duplex 4-up printing',
+        order       => [8,1,5,4,2,7,3,6],
+        must_rotate => [0,0,0,1,1,1,1,0],
+    },
+);
+my $config = $config_for{$BOOKLET_SIZE} or die "Unknown booklet size $BOOKLET_SIZE\n";
+
+my $source_pdf = PDF::API2->open($FILE);
+my $last = $source_pdf->pages;
+warn sprintf "Generating %d %s\n",
+    ceil($last / $BOOKLET_SIZE),
+    $config_for{$BOOKLET_SIZE}{description};
+
+my $new_pdf = PDF::API2->new;
+
+for (my $b = 0; $b <= $last; $b += $BOOKLET_SIZE) {
+    my @booklet = grep { $_ <= $last } map { $_ ? $b + $_ : $_ } @{ $config->{order} };
+    for my $page_number (@booklet) {
+        # add a page
+        my $new_page = $new_pdf->page;
+        # import the page from the source
+        my $page = $new_pdf->import_page($source_pdf, $page_number, $new_page);
+        my $position = $page_number % $BOOKLET_SIZE;
+        $page->rotate(180) if $config->{must_rotate}[$position];
+    }
+}
+
+print $new_pdf->stringify;
+
+# pdfbooklet file.pdf | lp -o sides=two-sided-long-edge -o number-up=4
