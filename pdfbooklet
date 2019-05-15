@@ -18,6 +18,11 @@ my %config_for = (
         order       => [8,1,5,4,2,7,3,6],
         must_rotate => [0,0,0,1,1,1,1,0],
     },
+    16 => {
+        description => '16-page booklets for duplex 16-up printing',
+        order => [0,0,0,0,9,8,3,2,10,11,16,1,0,0,0,0,0,5,6,0,0,4,7,0,0,15,12,0,0,14,13,0],
+        must_rotate => [0,0,1,1,1,0,0,1,1,1,0,0,0,1,1,0]
+    },
 );
 my $config = $config_for{$BOOKLET_SIZE} or die "Unknown booklet size $BOOKLET_SIZE\n";
 
@@ -35,9 +40,12 @@ for (my $b = 0; $b <= $last; $b += $BOOKLET_SIZE) {
         # add a page
         my $new_page = $new_pdf->page;
         # import the page from the source
-        my $page = $new_pdf->import_page($source_pdf, $page_number, $new_page);
-        my $position = $page_number % $BOOKLET_SIZE;
-        $page->rotate(180) if $config->{must_rotate}[$position];
+        # a page numbered 0 means to skip a page
+        if ($page_number) {
+            my $page = $new_pdf->import_page($source_pdf, $page_number, $new_page);
+            my $position = $page_number % $BOOKLET_SIZE;
+            $page->rotate(180) if $config->{must_rotate}[$position];
+        }
     }
 }
 
