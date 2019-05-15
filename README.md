@@ -18,6 +18,14 @@ for 4 page (2-up) booklets:
 pdfbooklet input.pdf 4 > output.pdf
 ```
 
+## pdfcombine
+
+```
+pdfcombine input1.pdf input2.pdf [...] > output.pdf
+```
+
+Combine multiple PDF files into a single PDF file.
+
 ## pdfmerge
 
 ```
